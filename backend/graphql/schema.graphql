@@ -1,0 +1,143 @@
+enum CacheControlScope {
+  PUBLIC,
+  PRIVATE
+}
+
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope
+  inheritMaxAge: Boolean
+) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+type Query{
+    studentLogin(input: AuthInput!): StudentAuthData! 
+    professorLogin(input: AuthInput!): ProfessorAuthData! 
+    studentById(id_student: ID!): Student! @cacheControl(maxAge: 120, scope: PUBLIC)
+    courseById(id_course: ID!): Course! @cacheControl(maxAge: 60, scope: PUBLIC)
+    coursesByStudent(id_student: ID!): [Course]! @cacheControl(maxAge: 360, scope: PRIVATE)
+    coursesByProfessor(id_professor: ID!): [Course]! @cacheControl(maxAge: 60, scope: PRIVATE)
+    courseTasksByStudent(input: StudentCourseInput!): [StudentTask]! @cacheControl(maxAge: 30, scope: PRIVATE)
+    courseTasks(id_course: ID!): [Task]! @cacheControl(maxAge: 30, scope: PUBLIC)
+    courseLectures(id_course: ID!): [Lecture]! @cacheControl(maxAge: 30, scope: PUBLIC)
+    taskSubmissions(id_task: ID!): [StudentTask]! @cacheControl(maxAge: 30, scope: PRIVATE)
+    studentsByCourse(id_course: ID!): [Student]! @cacheControl(maxAge: 120, scope: PUBLIC)
+    submissionById(id_submission: ID!): Submission! @cacheControl(maxAge: 10, scope: PUBLIC)
+}
+
+type Mutation{
+    addTask(input: TaskInput!): Task!
+    removeTask(id_task: ID!, id_course:ID!): ID!
+    addLecture(input: LectureInput!): Lecture!
+    removeLecture(id_lecture: ID!, id_course: ID!): ID!
+    gradeSubmission(input: GradeInput!): StudentTask!
+    submitTask(input: SubmissionInput!): StudentTask!
+}
+
+type Student @cacheControl(inheritMaxAge: true){
+    id_student: ID!
+    name: String!
+    surname: String!
+    username: String!
+    courses: [Course]!
+}
+
+type Professor @cacheControl(inheritMaxAge: true){
+    id_professor: ID!
+    name: String!
+    surname: String!
+    username: String!
+    courses: [Course]!
+}
+
+type Course @cacheControl(inheritMaxAge: true){
+    id_course: ID!
+    title: String!
+    professor: Professor!
+    students: [Student]! @cacheControl(inheritMaxAge: true)
+    tasks: [Task]! @cacheControl(maxAge: 60)
+    lectures: [Lecture]! @cacheControl(maxAge: 60)
+}
+
+type Task @cacheControl(inheritMaxAge: true){
+    id_task: ID!
+    title: String! 
+    description: String! 
+    date_created: String! 
+    course: Course! 
+}
+
+type Lecture @cacheControl(inheritMaxAge: true){
+    id_lecture: ID!
+    title: String!
+    url: String!
+    date_created: String!
+    course: Course!
+}
+
+type StudentTask @cacheControl(inheritMaxAge: true){ 
+    task: Task! 
+    student: Student!
+    submitted: Boolean!
+    submission: Submission 
+}
+
+type Submission @cacheControl(inheritMaxAge: true){
+    id_submission: ID!
+    task: Task!
+    date_submitted: String!
+    url: String!
+    title: String!
+    grade: Float
+    student: Student!
+}
+
+type StudentAuthData{
+    id_student: ID!
+    name: String!
+    surname: String!
+    username: String!
+    token: String!
+}
+
+type ProfessorAuthData{
+    id_professor: ID!
+    name: String!
+    surname: String!
+    username: String!
+    token: String!
+}
+
+input AuthInput{
+    username: String!
+    password: String!
+}
+
+input StudentCourseInput{
+    id_student: ID!
+    id_course: ID!
+}
+
+input SubmissionInput{
+    id_student: ID!
+    id_task: ID!
+    title: String!
+    url: String!
+}
+
+input TaskInput{
+    id_course: ID!
+    title: String!
+    description: String!
+}
+
+input LectureInput{
+    id_course: ID!
+    title: String!
+    url: String!
+}
+
+input GradeInput{
+    id_submission: ID!
+    grade: Float!
+}
+
